@@ -9,150 +9,156 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    color: #fff;
+    background: linear-gradient(135deg,#020024,#090979,#00d4ff);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #fff;
 }
-
-.container {
-    background: rgba(0,0,0,0.4);
+.box {
+    background: rgba(0,0,0,0.45);
     padding: 25px;
     border-radius: 15px;
     width: 100%;
-    max-width: 420px;
-    box-shadow: 0 0 25px rgba(0,255,255,0.25);
+    max-width: 430px;
+    box-shadow: 0 0 25px rgba(0,255,255,0.4);
 }
-
 h1 {
     text-align: center;
-    margin-bottom: 10px;
     color: #00ffff;
 }
-
-p {
-    text-align: center;
-    font-size: 14px;
-    opacity: 0.9;
-}
-
-.email-box {
-    background: #111;
+.email {
+    background: #000;
     padding: 12px;
     border-radius: 10px;
-    margin-top: 15px;
     text-align: center;
+    margin-top: 15px;
     word-break: break-all;
     font-weight: bold;
     color: #00ffcc;
 }
-
 button {
     width: 100%;
     padding: 12px;
-    margin-top: 12px;
+    margin-top: 10px;
     border: none;
     border-radius: 10px;
-    font-size: 15px;
     font-weight: bold;
     cursor: pointer;
-    background: #00ffff;
-    color: #000;
 }
-
-button:hover {
-    background: #00cccc;
-}
-
-.messages {
+.gen { background: #00ffff; }
+.chk { background: #00cc99; }
+.msgs {
     margin-top: 15px;
-    background: #0b0b0b;
+    background: #050505;
     padding: 10px;
     border-radius: 10px;
     max-height: 200px;
     overflow-y: auto;
     font-size: 14px;
 }
-
 .msg {
     border-bottom: 1px solid #222;
     padding: 6px 0;
 }
-
 .footer {
     text-align: center;
     font-size: 12px;
-    margin-top: 15px;
     opacity: 0.7;
+    margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="box">
     <h1>📧 Amirxan Temp Mail</h1>
-    <p>Bir martalik vaqtinchalik email xizmati</p>
 
-    <div class="email-box" id="email">Email yaratilmagan</div>
+    <div class="email" id="email">Email yaratilmagan</div>
 
-    <button onclick="generateEmail()">♻️ Yangi Email</button>
-    <button onclick="loadMessages()">📨 Xabarlarni Tekshirish</button>
+    <button class="gen" onclick="createMail()">♻️ Yangi Email</button>
+    <button class="chk" onclick="checkInbox()">📨 Xabarlarni Tekshirish</button>
 
-    <div class="messages" id="messages">
-        <div class="msg">Hali xabar yo‘q</div>
+    <div class="msgs" id="msgs">
+        <div class="msg">Xabarlar shu yerda chiqadi</div>
     </div>
 
-    <div class="footer">
-        © 2026 Amirxan | Temp Mail
-    </div>
+    <div class="footer">© 2026 Amirxan</div>
 </div>
 
 <script>
-let login = "";
-let domain = "";
+let token = "";
+let accountId = "";
 
-function randomString(len) {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let str = "";
-    for (let i = 0; i < len; i++) {
-        str += chars[Math.floor(Math.random() * chars.length)];
+function rand(len) {
+    return Math.random().toString(36).substring(2, 2 + len);
+}
+
+async function createMail() {
+    document.getElementById("msgs").innerHTML = "<div class='msg'>Email yaratilmoqda...</div>";
+
+    // domen olish
+    let d = await fetch("https://api.mail.tm/domains");
+    let dj = await d.json();
+    let domain = dj["hydra:member"][0].domain;
+
+    let address = rand(10) + "@" + domain;
+    let password = rand(12);
+
+    // account yaratish
+    let acc = await fetch("https://api.mail.tm/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, password })
+    });
+
+    if (!acc.ok) {
+        document.getElementById("msgs").innerHTML = "<div class='msg'>Xatolik! Qayta urinib ko‘ring</div>";
+        return;
     }
-    return str;
+
+    let accj = await acc.json();
+    accountId = accj.id;
+
+    // login
+    let lg = await fetch("https://api.mail.tm/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, password })
+    });
+
+    let lgj = await lg.json();
+    token = lgj.token;
+
+    document.getElementById("email").innerText = address;
+    document.getElementById("msgs").innerHTML = "<div class='msg'>Email tayyor. Xabar kutilyapti...</div>";
 }
 
-function generateEmail() {
-    login = randomString(10);
-    domain = "1secmail.com";
-    document.getElementById("email").innerText = login + "@" + domain;
-    document.getElementById("messages").innerHTML = "<div class='msg'>Email yaratildi. Xabar kutilyapti...</div>";
-}
-
-async function loadMessages() {
-    if (!login) {
+async function checkInbox() {
+    if (!token) {
         alert("Avval email yarating!");
         return;
     }
 
-    const url = `https://www.1secmail.com/api/v1/?action=getMessages&login=${login}&domain=${domain}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    let res = await fetch("https://api.mail.tm/messages", {
+        headers: { "Authorization": "Bearer " + token }
+    });
+    let data = await res.json();
 
     let html = "";
-    if (data.length === 0) {
+    if (data["hydra:member"].length === 0) {
         html = "<div class='msg'>Hali xabar kelmagan</div>";
     } else {
-        data.forEach(msg => {
-            html += `
-            <div class="msg">
-                <b>Kimdan:</b> ${msg.from}<br>
-                <b>Mavzu:</b> ${msg.subject}
+        data["hydra:member"].forEach(m => {
+            html += `<div class="msg">
+                <b>Kimdan:</b> ${m.from.address}<br>
+                <b>Mavzu:</b> ${m.subject}
             </div>`;
         });
     }
-    document.getElementById("messages").innerHTML = html;
+    document.getElementById("msgs").innerHTML = html;
 }
 </script>
 
