@@ -1,39 +1,160 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <title>Amirxan Test Site</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background: linear-gradient(135deg, #020617, #0f172a);
-            color: #38bdf8;
-            font-family: Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        .box {
-            background: rgba(255,255,255,0.05);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 0 30px rgba(56,189,248,0.3);
-        }
-        h1 {
-            margin-bottom: 10px;
-        }
-        p {
-            opacity: 0.8;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Amirxan Temp Mail</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    background: rgba(0,0,0,0.4);
+    padding: 25px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 0 25px rgba(0,255,255,0.25);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #00ffff;
+}
+
+p {
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.email-box {
+    background: #111;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 15px;
+    text-align: center;
+    word-break: break-all;
+    font-weight: bold;
+    color: #00ffcc;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #00ffff;
+    color: #000;
+}
+
+button:hover {
+    background: #00cccc;
+}
+
+.messages {
+    margin-top: 15px;
+    background: #0b0b0b;
+    padding: 10px;
+    border-radius: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.msg {
+    border-bottom: 1px solid #222;
+    padding: 6px 0;
+}
+
+.footer {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 15px;
+    opacity: 0.7;
+}
+</style>
 </head>
+
 <body>
-    <div class="box">
-        <h1>🚀 Test Sayt Ishlayapti</h1>
-        <p>GitHub Pages + Domen test muvaffaqiyatli 😎</p>
+
+<div class="container">
+    <h1>📧 Amirxan Temp Mail</h1>
+    <p>Bir martalik vaqtinchalik email xizmati</p>
+
+    <div class="email-box" id="email">Email yaratilmagan</div>
+
+    <button onclick="generateEmail()">♻️ Yangi Email</button>
+    <button onclick="loadMessages()">📨 Xabarlarni Tekshirish</button>
+
+    <div class="messages" id="messages">
+        <div class="msg">Hali xabar yo‘q</div>
     </div>
+
+    <div class="footer">
+        © 2026 Amirxan | Temp Mail
+    </div>
+</div>
+
+<script>
+let login = "";
+let domain = "";
+
+function randomString(len) {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let str = "";
+    for (let i = 0; i < len; i++) {
+        str += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return str;
+}
+
+function generateEmail() {
+    login = randomString(10);
+    domain = "1secmail.com";
+    document.getElementById("email").innerText = login + "@" + domain;
+    document.getElementById("messages").innerHTML = "<div class='msg'>Email yaratildi. Xabar kutilyapti...</div>";
+}
+
+async function loadMessages() {
+    if (!login) {
+        alert("Avval email yarating!");
+        return;
+    }
+
+    const url = `https://www.1secmail.com/api/v1/?action=getMessages&login=${login}&domain=${domain}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    let html = "";
+    if (data.length === 0) {
+        html = "<div class='msg'>Hali xabar kelmagan</div>";
+    } else {
+        data.forEach(msg => {
+            html += `
+            <div class="msg">
+                <b>Kimdan:</b> ${msg.from}<br>
+                <b>Mavzu:</b> ${msg.subject}
+            </div>`;
+        });
+    }
+    document.getElementById("messages").innerHTML = html;
+}
+</script>
+
 </body>
 </html>
